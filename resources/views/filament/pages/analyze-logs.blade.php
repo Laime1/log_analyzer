@@ -19,6 +19,9 @@
         @php
             $aiAnalysis = $analysis['ai_analysis'] ?? null;
             $riskLevel = $aiAnalysis['risk_level'] ?? null;
+            $filename = $analysis['filename'] ?? null;
+            $size = $analysis['size'] ?? null;
+            $lines = $analysis['lines'] ?? null;
             $riskClasses = [
                 'bajo' => 'bg-emerald-100 text-emerald-700',
                 'medio' => 'bg-amber-100 text-amber-700',
@@ -29,47 +32,84 @@
 
         <div class="mt-6 space-y-4">
             <h3 class="text-lg font-semibold tracking-tight">Resultado del análisis</h3>
+
             @if ($aiAnalysis)
-                <div class="rounded-xl border border-slate-200/80 bg-white/80 p-4 shadow-sm">
-                    <div class="space-y-6">
-                        <div>
-                            <h4 class="text-sm font-semibold text-slate-700">Resumen</h4>
-                            <p class="mt-2 text-sm leading-6 text-slate-800">{{ $aiAnalysis['summary'] ?? 'No hay resumen disponible.' }}</p>
-                        </div>
-
-                        <div class="flex flex-wrap items-center gap-3">
-                            <h4 class="text-sm font-semibold text-slate-700">Nivel de riesgo</h4>
-                            <span class="rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide {{ $riskClasses[$riskLevel] ?? 'bg-slate-100 text-slate-700' }}">
-                                {{ $riskLevel ? ucfirst($riskLevel) : 'Desconocido' }}
-                            </span>
-                        </div>
-
-                        <div>
-                            <h4 class="text-sm font-semibold text-slate-700">Hallazgos</h4>
-                            @if (!empty($aiAnalysis['findings']))
-                                <ul class="mt-2 space-y-2 text-sm text-slate-800 list-disc pl-5">
-                                    @foreach ($aiAnalysis['findings'] as $finding)
-                                        <li>{{ $finding }}</li>
-                                    @endforeach
-                                </ul>
-                            @else
-                                <p class="mt-2 text-sm text-slate-500">No se encontraron hallazgos.</p>
-                            @endif
-                        </div>
-
-                        <div>
-                            <h4 class="text-sm font-semibold text-slate-700">Recomendaciones</h4>
-                            @if (!empty($aiAnalysis['recommendations']))
-                                <ul class="mt-2 space-y-2 text-sm text-slate-800 list-disc pl-5">
-                                    @foreach ($aiAnalysis['recommendations'] as $recommendation)
-                                        <li>{{ $recommendation }}</li>
-                                    @endforeach
-                                </ul>
-                            @else
-                                <p class="mt-2 text-sm text-slate-500">No se encontraron recomendaciones.</p>
-                            @endif
-                        </div>
+                <div class="rounded-xl border border-slate-200/80 bg-white/80 p-5 shadow-sm">
+                    <div class="flex flex-wrap items-center gap-4 text-sm text-slate-700">
+                        @if ($filename)
+                            <div class="flex items-center gap-1.5">
+                                <x-heroicon-o-document-text class="h-4 w-4 text-slate-400" />
+                                <span class="font-medium">{{ $filename }}</span>
+                            </div>
+                        @endif
+                        @if ($size)
+                            <div class="flex items-center gap-1.5">
+                                <x-heroicon-o-arrow-path class="h-4 w-4 text-slate-400" />
+                                <span>{{ round($size / 1024, 1) }} KB</span>
+                            </div>
+                        @endif
+                        @if ($lines)
+                            <div class="flex items-center gap-1.5">
+                                <x-heroicon-o-bars-3 class="h-4 w-4 text-slate-400" />
+                                <span>{{ number_format($lines) }} líneas</span>
+                            </div>
+                        @endif
                     </div>
+                </div>
+
+                <div class="rounded-xl border border-slate-200/80 bg-white/80 p-5 shadow-sm">
+                    <div class="space-y-2">
+                        <h4 class="text-sm font-semibold text-slate-700">Resumen</h4>
+                        <p class="text-sm leading-6 text-slate-800">{{ $aiAnalysis['summary'] ?? 'No hay resumen disponible.' }}</p>
+                    </div>
+                </div>
+
+                <div class="rounded-xl border border-slate-200/80 bg-white/80 p-5 shadow-sm">
+                    <div class="flex flex-wrap items-center gap-3">
+                        <h4 class="text-sm font-semibold text-slate-700">Nivel de riesgo</h4>
+                        <span class="rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide {{ $riskClasses[$riskLevel] ?? 'bg-slate-100 text-slate-700' }}">
+                            {{ $riskLevel ? ucfirst($riskLevel) : 'Desconocido' }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="rounded-xl border border-slate-200/80 bg-white/80 p-5 shadow-sm">
+                    <div class="space-y-2">
+                        <h4 class="text-sm font-semibold text-slate-700">Hallazgos</h4>
+                        @if (!empty($aiAnalysis['findings']))
+                            <ul class="space-y-2">
+                                @foreach ($aiAnalysis['findings'] as $finding)
+                                    <li class="rounded-lg border border-slate-200/60 bg-slate-50/80 px-4 py-2.5 text-sm text-slate-800">
+                                        {{ $finding }}
+                                    </li>
+                                @endforeach
+                            </ul>
+                        @else
+                            <p class="text-sm text-slate-500">No se encontraron hallazgos.</p>
+                        @endif
+                    </div>
+                </div>
+
+                <div class="rounded-xl border border-slate-200/80 bg-white/80 p-5 shadow-sm">
+                    <div class="space-y-2">
+                        <h4 class="text-sm font-semibold text-slate-700">Recomendaciones</h4>
+                        @if (!empty($aiAnalysis['recommendations']))
+                            <ul class="space-y-2">
+                                @foreach ($aiAnalysis['recommendations'] as $recommendation)
+                                    <li class="rounded-lg border border-emerald-200/60 bg-emerald-50/80 px-4 py-2.5 text-sm text-emerald-800">
+                                        {{ $recommendation }}
+                                    </li>
+                                @endforeach
+                            </ul>
+                        @else
+                            <p class="text-sm text-slate-500">No se encontraron recomendaciones.</p>
+                        @endif
+                    </div>
+                </div>
+
+                <div class="rounded-xl border border-slate-200/80 bg-slate-950 p-5 shadow-sm">
+                    <h4 class="text-sm font-semibold text-slate-300 mb-3">JSON de respuesta (debug)</h4>
+                    <pre class="overflow-x-auto text-xs text-emerald-400 leading-relaxed">{{ json_encode($analysis, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
                 </div>
             @else
                 <div class="rounded-xl border border-slate-200/80 bg-slate-950 p-4 text-sm text-white">

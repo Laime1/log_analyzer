@@ -83,6 +83,8 @@ class AnalyzeLogs extends Page implements HasSchemas
         $this->statusMessage = null;
         $this->isLoading = true;
 
+        set_time_limit(600);
+
         try {
             $formState = $this->form->getState();
             $file = $formState['file'] ?? null;
@@ -93,7 +95,8 @@ class AnalyzeLogs extends Page implements HasSchemas
                 return;
             }
 
-            $response = Http::timeout(60)
+            $response = Http::timeout(600)
+                ->retry(1, 1000)
                 ->attach(
                     'file',
                     $file->get(),
@@ -108,7 +111,7 @@ class AnalyzeLogs extends Page implements HasSchemas
                 $this->statusMessage = 'Error del servidor de análisis: '.$response->status();
             }
         } catch (ConnectionException $e) {
-            $this->statusMessage = 'No se pudo conectar con el servicio de análisis (FastAPI). ¿Está corriendo?';
+            $this->statusMessage = 'Tiempo de espera agotado (10 min). Detalle: '.$e->getMessage();
         } catch (\Throwable $e) {
             $this->statusMessage = 'Ocurrió un error inesperado: '.$e->getMessage();
         } finally {
