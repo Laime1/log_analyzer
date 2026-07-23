@@ -10,7 +10,6 @@ use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Schemas\Schema;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Storage;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 class AnalyzeLogs extends Page implements HasSchemas
@@ -25,13 +24,21 @@ class AnalyzeLogs extends Page implements HasSchemas
 
     protected static ?string $navigationLabel = 'Analizar logs';
 
+    protected static ?string $title = 'Subir archivo de log';
+
     public array $data = [];
 
-    public ?string $content = null;
+    public ?string $fileName = null;
+
+    public ?int $fileSize = null;
+
+    public ?string $preview = null;
+
+    public ?string $statusMessage = null;
 
     public ?array $analysis = null;
 
-    public ?string $statusMessage = null;
+    public int $step = 1;
 
     public bool $isLoading = false;
 
@@ -57,30 +64,35 @@ class AnalyzeLogs extends Page implements HasSchemas
                     ])
                     ->required()
                     ->storeFiles(false)
-                    ->maxSize(10240),
+                    ->maxSize(10240)
+                    ->afterStateUpdated(fn () => $this->loadPreview()),
             ]);
     }
 
-    public function loadFile(): void
+    public function loadPreview(): void
     {
+        $this->statusMessage = null;
+        $this->fileName = null;
+        $this->fileSize = null;
+        $this->preview = null;
+
         $formState = $this->form->getState();
         $file = $formState['file'] ?? null;
 
-        if ($file instanceof TemporaryUploadedFile) {
-            $this->content = $file->get();
-
+        if (! $file instanceof TemporaryUploadedFile) {
             return;
         }
 
-        if (is_string($file) && Storage::disk('local')->exists($file)) {
-            $this->content = Storage::disk('local')->get($file);
-        }
+        $content = $file->get();
+        $this->fileName = $file->getClientOriginalName();
+        $this->fileSize = $file->getSize();
+        $this->preview = implode("\n", array_slice(explode("\n", $content), 0, 20));
     }
 
     public function analyze(): void
     {
-        $this->analysis = null;
         $this->statusMessage = null;
+        $this->analysis = null;
         $this->isLoading = true;
 
         set_time_limit(600);
@@ -91,6 +103,7 @@ class AnalyzeLogs extends Page implements HasSchemas
 
             if (! $file instanceof TemporaryUploadedFile) {
                 $this->statusMessage = 'No se encontró un archivo válido para enviar.';
+                $this->isLoading = false;
 
                 return;
             }
@@ -106,6 +119,7 @@ class AnalyzeLogs extends Page implements HasSchemas
 
             if ($response->successful()) {
                 $this->analysis = $response->json();
+                $this->step = 2;
                 $this->statusMessage = 'Análisis completado correctamente.';
             } else {
                 $this->statusMessage = 'Error del servidor de análisis: '.$response->status();
@@ -117,5 +131,27 @@ class AnalyzeLogs extends Page implements HasSchemas
         } finally {
             $this->isLoading = false;
         }
+    }
+
+    public function goBack(): void
+    {
+        $this->step = 1;
+        $this->analysis = null;
+        $this->statusMessage = null;
+        $this->fileName = null;
+        $this->fileSize = null;
+        $this->preview = null;
+        $this->form->fill(['file' => null]);
+    }
+
+    public function cancel(): void
+    {
+        $this->step = 1;
+        $this->analysis = null;
+        $this->statusMessage = null;
+        $this->fileName = null;
+        $this->fileSize = null;
+        $this->preview = null;
+        $this->form->fill(['file' => null]);
     }
 }
